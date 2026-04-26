@@ -2,6 +2,15 @@ import { NextResponse } from "next/server"
 import nodemailer from "nodemailer"
 import { Resend } from "resend"
 import { getCalendarClient, getCalendarId } from "@/lib/google-calendar"
+import {
+  appendBookingToSheet,
+  generateBookingId,
+  formatAddons,
+  formatVehicle,
+  formatAppointmentDate,
+  formatAppointmentTime,
+  getSheetId,
+} from "@/lib/google-sheets"
 
 type Addon = {
   name: string
@@ -241,6 +250,29 @@ export async function POST(request: Request) {
 
         emailSent = true
         emailProvider = "resend"
+        
+        // Append booking to Google Sheets
+        const hasGoogleSheetConfig = Boolean(process.env.GOOGLE_SHEET_ID)
+        if (hasGoogleSheetConfig) {
+          const bookingId = generateBookingId()
+          const manilaTime = new Date().toLocaleString("en-US", { timeZone: "Asia/Manila" })
+          await appendBookingToSheet({
+            bookingId,
+            dateSubmitted: manilaTime,
+            customerName: payload.customerName,
+            customerEmail: payload.customerEmail,
+            customerPhone: payload.customerPhone,
+            service: payload.serviceTitle,
+            addons: formatAddons(payload.addons),
+            totalAmount: `PHP ${payload.totalAmount.toLocaleString()}`,
+            vehicle: formatVehicle(payload.vehicle),
+            appointmentDate: formatAppointmentDate(payload.appointmentDate),
+            appointmentTime: formatAppointmentTime(payload.appointmentTime),
+          })
+        } else {
+          console.warn("⚠ Google Sheets not configured - skipping booking record")
+        }
+        
         return NextResponse.json({ ok: true, emailSent: true, emailProvider: "resend", eventLink })
       } catch (resendError) {
         const errorMsg = resendError instanceof Error ? resendError.message : "Unknown error"
@@ -287,6 +319,29 @@ export async function POST(request: Request) {
         })
         emailSent = true
         emailProvider = "smtp"
+        
+        // Append booking to Google Sheets
+        const hasGoogleSheetConfig = Boolean(process.env.GOOGLE_SHEET_ID)
+        if (hasGoogleSheetConfig) {
+          const bookingId = generateBookingId()
+          const manilaTime = new Date().toLocaleString("en-US", { timeZone: "Asia/Manila" })
+          await appendBookingToSheet({
+            bookingId,
+            dateSubmitted: manilaTime,
+            customerName: payload.customerName,
+            customerEmail: payload.customerEmail,
+            customerPhone: payload.customerPhone,
+            service: payload.serviceTitle,
+            addons: formatAddons(payload.addons),
+            totalAmount: `PHP ${payload.totalAmount.toLocaleString()}`,
+            vehicle: formatVehicle(payload.vehicle),
+            appointmentDate: formatAppointmentDate(payload.appointmentDate),
+            appointmentTime: formatAppointmentTime(payload.appointmentTime),
+          })
+        } else {
+          console.warn("⚠ Google Sheets not configured - skipping booking record")
+        }
+        
         return NextResponse.json({ ok: true, emailSent: true, emailProvider: "smtp", eventLink })
       } catch (smtpError) {
         const errorMsg = smtpError instanceof Error ? smtpError.message : "Unknown error"
@@ -295,6 +350,29 @@ export async function POST(request: Request) {
     }
 
     console.warn("⚠ No email provider configured. Set RESEND_* (recommended) or SMTP_* in .env.local")
+    
+    // Append booking to Google Sheets even if email fails
+    const hasGoogleSheetConfig = Boolean(process.env.GOOGLE_SHEET_ID)
+    if (hasGoogleSheetConfig) {
+      const bookingId = generateBookingId()
+      const manilaTime = new Date().toLocaleString("en-US", { timeZone: "Asia/Manila" })
+      await appendBookingToSheet({
+        bookingId,
+        dateSubmitted: manilaTime,
+        customerName: payload.customerName,
+        customerEmail: payload.customerEmail,
+        customerPhone: payload.customerPhone,
+        service: payload.serviceTitle,
+        addons: formatAddons(payload.addons),
+        totalAmount: `PHP ${payload.totalAmount.toLocaleString()}`,
+        vehicle: formatVehicle(payload.vehicle),
+        appointmentDate: formatAppointmentDate(payload.appointmentDate),
+        appointmentTime: formatAppointmentTime(payload.appointmentTime),
+      })
+    } else {
+      console.warn("⚠ Google Sheets not configured - skipping booking record")
+    }
+    
     return NextResponse.json({
       ok: true,
       emailSent: false,
