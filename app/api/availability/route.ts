@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server"
 import { getCalendarClient, getCalendarId } from "@/lib/google-calendar"
 
-const SLOT_HOURS = [
+// Monday-Friday: 6am to 6pm
+const WEEKDAY_SLOTS = [
   "06:00",
   "07:00",
   "08:00",
@@ -15,6 +16,26 @@ const SLOT_HOURS = [
   "16:00",
   "17:00",
 ]
+
+// Saturday-Sunday: 9am to 5pm
+const WEEKEND_SLOTS = [
+  "09:00",
+  "10:00",
+  "11:00",
+  "12:00",
+  "13:00",
+  "14:00",
+  "15:00",
+  "16:00",
+  "17:00",
+]
+
+function getSlotHoursForDate(dateStr: string): string[] {
+  const date = new Date(`${dateStr}T00:00:00+08:00`)
+  const dayOfWeek = date.getDay()
+  // 0 = Sunday, 6 = Saturday
+  return dayOfWeek === 0 || dayOfWeek === 6 ? WEEKEND_SLOTS : WEEKDAY_SLOTS
+}
 
 const GOOGLE_ENV_KEYS = [
   "GOOGLE_SERVICE_ACCOUNT_CLIENT_EMAIL",
@@ -40,10 +61,11 @@ export async function GET(request: Request) {
     }
 
     const hasGoogleConfig = GOOGLE_ENV_KEYS.every((key) => Boolean(process.env[key]))
+    const slotHours = getSlotHoursForDate(date)
     if (!hasGoogleConfig) {
       return NextResponse.json({
         date,
-        slots: SLOT_HOURS,
+        slots: slotHours,
         fallback: true,
         message: "Google Calendar is not configured yet. Showing default slots.",
       })
@@ -66,7 +88,7 @@ export async function GET(request: Request) {
 
     const events = eventsResponse.data.items || []
 
-    const availableSlots = SLOT_HOURS.filter((slotStart) => {
+    const availableSlots = slotHours.filter((slotStart) => {
       const start = toIso(date, slotStart)
       const [hour] = slotStart.split(":")
       const endHour = Number(hour) + 1

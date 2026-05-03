@@ -30,41 +30,58 @@ const vehicleMakes = [
 ]
 
 const vehicleTypes = [
-  "SEDAN", "SUV 2-ROW", "SUV 3-ROW", "TRUCK MID", "TRUCK FULL", "VAN"
+  "Compact/Hatch",
+  "Sedan Type",
+  "APV/AUV",
+  "SUV/Pick-up",
+  "Lifted/Van/L300",
 ]
 
 const yearRange = Array.from({ length: 30 }, (_, i) => (2026 - i).toString())
 
-const upgrades = [
+const addOns = [
   {
-    id: "full-detail",
-    name: "Express Full Detail",
-    description: "Upgrade to get both interior & exterior in one visit.",
+    id: "headlight-restoration",
+    name: "Headlight Restoration (per pair)",
+    description: "+₱1,000 | +2 hrs",
+    price: 1000,
+    durationMinutes: 120,
+  },
+  {
+    id: "engine-bay-cleaning",
+    name: "Engine Bay Cleaning",
+    description: "+₱500 | +30 mins",
     price: 500,
-    badge: "MOST POPULAR UPGRADE",
-    badgeColor: "bg-[#D4A843]",
-    duration: "2 hr 45 min",
-    image: "/images/interior-detailing.jpg"
+    durationMinutes: 30,
   },
   {
-    id: "ceramic-upgrade",
-    name: "2-Step Ceramic Coating",
-    description: "2-step correction + ceramic coating. Max gloss, wheel coating included. 5-year warranty.",
-    price: 8000,
-    badge: "ADD CERAMIC COATING",
-    badgeColor: "bg-[#D4A843]",
-    image: "/images/ceramic-coating.jpg"
+    id: "back-to-zero",
+    name: "Back to Zero Sanitation",
+    description: "+₱500 | +5 mins",
+    price: 500,
+    durationMinutes: 5,
   },
   {
-    id: "engine-addon",
-    name: "Engine Bay Detail",
-    description: "Full engine degreasing and dressing for a like-new engine bay.",
-    price: 800,
-    badge: "ADD-ON",
-    badgeColor: "bg-gray-600",
-    duration: "45 min",
-    image: "/images/engine-wash.jpg"
-  }
+    id: "water-spot-removal",
+    name: "Water Spot Removal",
+    description: "+₱500 | +10 mins",
+    price: 500,
+    durationMinutes: 10,
+  },
+  {
+    id: "quick-beads",
+    name: "Quick Beads",
+    description: "+₱300 | +10 mins",
+    price: 300,
+    durationMinutes: 10,
+  },
+  {
+    id: "deluxe-interior-detail",
+    name: "Deluxe Interior Detail",
+    description: "+₱500 | +30 mins",
+    price: 500,
+    durationMinutes: 30,
+  },
 ]
 
 export function BookingModal({ isOpen, onClose, initialServiceId }: BookingModalProps) {
@@ -75,7 +92,7 @@ export function BookingModal({ isOpen, onClose, initialServiceId }: BookingModal
   const [vehicleModel, setVehicleModel] = useState("")
   const [vehicleYear, setVehicleYear] = useState("")
   const [vehicleType, setVehicleType] = useState("")
-  const [selectedUpgrades, setSelectedUpgrades] = useState<string[]>([])
+  const [selectedAddOns, setSelectedAddOns] = useState<string[]>([])
   const [selectedShopItems, setSelectedShopItems] = useState<string[]>([])
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [selectedTime, setSelectedTime] = useState("")
@@ -122,7 +139,7 @@ export function BookingModal({ isOpen, onClose, initialServiceId }: BookingModal
     setVehicleModel("")
     setVehicleYear("")
     setVehicleType("")
-    setSelectedUpgrades([])
+    setSelectedAddOns([])
     setSelectedShopItems([])
     setSelectedDate(null)
     setSelectedTime("")
@@ -163,9 +180,7 @@ export function BookingModal({ isOpen, onClose, initialServiceId }: BookingModal
       setSubmitError("")
       setSubmitNotice("")
       try {
-        const selectedUpgradesData = selectedUpgrades
-          .map((upgradeId) => upgrades.find((u) => u.id === upgradeId))
-          .filter((upgrade): upgrade is (typeof upgrades)[number] => Boolean(upgrade))
+        const selectedAddOnsData = addOns.filter((addon) => selectedAddOns.includes(addon.id))
 
         const response = await fetch("/api/bookings", {
           method: "POST",
@@ -175,7 +190,7 @@ export function BookingModal({ isOpen, onClose, initialServiceId }: BookingModal
             customerEmail: email,
             customerPhone: phone,
             serviceTitle: selectedServiceData?.title || "",
-            serviceBasePrice: selectedServiceData?.priceValue || 0,
+            serviceBasePrice: selectedServicePrice,
             vehicle: {
               make: vehicleMake,
               model: vehicleModel,
@@ -183,9 +198,9 @@ export function BookingModal({ isOpen, onClose, initialServiceId }: BookingModal
               type: vehicleType,
             },
             addons: [
-              ...selectedUpgradesData.map((upgrade) => ({
-                name: upgrade.name,
-                price: upgrade.price,
+              ...selectedAddOnsData.map((addon) => ({
+                name: addon.name,
+                price: addon.price,
               })),
               ...selectedShopItemsData.map((item) => ({
                 name: item.name,
@@ -227,22 +242,53 @@ export function BookingModal({ isOpen, onClose, initialServiceId }: BookingModal
     }
   }
 
-  const toggleUpgrade = (id: string) => {
-    setSelectedUpgrades(prev => 
-      prev.includes(id) ? prev.filter(u => u !== id) : [...prev, id]
+  const toggleAddOn = (id: string) => {
+    setSelectedAddOns((prev) =>
+      prev.includes(id) ? prev.filter((addonId) => addonId !== id) : [...prev, id]
     )
   }
 
-    const toggleShopItem = (id: string) => {
-    setSelectedShopItems(prev =>
+  const toggleShopItem = (id: string) => {
+    setSelectedShopItems((prev) =>
       prev.includes(id) ? prev.filter((itemId) => itemId !== id) : [...prev, id]
     )
   }
 
-  const selectedServiceData = services.find(s => s.id === selectedService)
+  const selectedServiceData = services.find((s) => s.id === selectedService)
   const selectedShopItemsData = selectedShopItems
     .map((itemId) => merchandise.find((item) => item.id === itemId))
     .filter((item): item is typeof merchandise[number] => Boolean(item))
+
+  const selectedAddOnsData = addOns.filter((addon) => selectedAddOns.includes(addon.id))
+
+  const selectedServicePrice = selectedServiceData
+    ? vehicleType && selectedServiceData.prices[vehicleType as keyof typeof selectedServiceData.prices]
+      ? selectedServiceData.prices[vehicleType as keyof typeof selectedServiceData.prices]
+      : selectedServiceData.priceValue
+    : 0
+
+  const calculateTotal = () => {
+    let total = selectedServicePrice
+    selectedAddOnsData.forEach((addon) => {
+      total += addon.price
+    })
+    selectedShopItemsData.forEach((item) => {
+      total += item.priceValue
+    })
+    return total
+  }
+
+  const calculateEstimatedDuration = () => {
+    let minutes = selectedServiceData?.durationMinutes || 0
+    selectedAddOnsData.forEach((addon) => {
+      minutes += addon.durationMinutes
+    })
+    return minutes
+  }
+
+  const availableUpgrades = selectedServiceData?.canUpgradeTo
+    ?.map((id) => services.find((service) => service.id === id))
+    .filter((service): service is typeof services[number] => Boolean(service)) || []
 
   useEffect(() => {
     const loadAvailability = async () => {
@@ -269,19 +315,6 @@ export function BookingModal({ isOpen, onClose, initialServiceId }: BookingModal
 
     loadAvailability()
   }, [selectedDate, step])
-
-  // Calculate total price
-  const calculateTotal = () => {
-    let total = selectedServiceData?.priceValue || 0
-    selectedUpgrades.forEach(upgradeId => {
-      const upgrade = upgrades.find(u => u.id === upgradeId)
-      if (upgrade) total += upgrade.price
-    })
-    selectedShopItemsData.forEach((item) => {
-      total += item.priceValue
-    })
-    return total
-  }
 
   const getDaysInMonth = (date: Date) => {
     const year = date.getFullYear()
@@ -404,7 +437,7 @@ export function BookingModal({ isOpen, onClose, initialServiceId }: BookingModal
                   <span className="text-gray-500 text-sm">Selected Service</span>
                   <div className="flex items-center gap-2">
                     <span className="font-bold text-gray-900">{selectedServiceData.title}</span>
-                    <span className="text-[#D4A843] font-bold">{selectedServiceData.price}</span>
+                    <span className="text-[#D4A843] font-bold">₱{selectedServicePrice.toLocaleString()}</span>
                     <Info className="w-4 h-4 text-gray-400" />
                   </div>
                 </div>
@@ -427,27 +460,42 @@ export function BookingModal({ isOpen, onClose, initialServiceId }: BookingModal
                       <h3 className="text-lg font-bold text-gray-900 mb-1">Your phone number</h3>
                       <p className="text-gray-500 text-sm">We&apos;ll send your booking confirmation here.</p>
                     </div>
-                    <input
-                      type="text"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      placeholder="Full Name"
-                      className="w-full px-4 py-4 text-lg border-2 border-[#D4A843] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#D4A843]/50 text-gray-900 placeholder-gray-400"
-                    />
-                    <input
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="your@email.com"
-                      className="w-full px-4 py-4 text-lg border-2 border-[#D4A843] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#D4A843]/50 text-gray-900 placeholder-gray-400"
-                    />
-                    <input
-                      type="tel"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      placeholder="0917 000 0000"
-                      className="w-full px-4 py-4 text-lg border-2 border-[#D4A843] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#D4A843]/50 text-gray-900 placeholder-gray-400"
-                    />
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Name <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        placeholder="Full Name"
+                        className="w-full px-4 py-4 text-lg border-2 border-[#D4A843] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#D4A843]/50 text-gray-900 placeholder-gray-400"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Email
+                      </label>
+                      <input
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="your@email.com"
+                        className="w-full px-4 py-4 text-lg border-2 border-[#D4A843] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#D4A843]/50 text-gray-900 placeholder-gray-400"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Phone Number <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="tel"
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        placeholder="0917 000 0000"
+                        className="w-full px-4 py-4 text-lg border-2 border-[#D4A843] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#D4A843]/50 text-gray-900 placeholder-gray-400"
+                      />
+                    </div>
                     <p className="text-gray-400 text-xs text-center">
                       By continuing you agree to receive texts & calls about our services.
                     </p>
@@ -517,7 +565,9 @@ export function BookingModal({ isOpen, onClose, initialServiceId }: BookingModal
                     
                     {/* Vehicle Make */}
                     <div>
-                      <label className="block text-xs font-bold text-gray-700 tracking-wider mb-2">VEHICLE MAKE</label>
+                      <label className="block text-xs font-bold text-gray-700 tracking-wider mb-2">
+                        VEHICLE MAKE <span className="text-red-500">*</span>
+                      </label>
                       <select
                         value={vehicleMake}
                         onChange={(e) => setVehicleMake(e.target.value)}
@@ -560,7 +610,9 @@ export function BookingModal({ isOpen, onClose, initialServiceId }: BookingModal
                     <div>
                       <div className="flex items-center gap-4 mb-3">
                         <div className="flex-1 h-px bg-gray-200" />
-                        <span className="text-xs font-bold text-gray-500 tracking-wider">VEHICLE TYPE</span>
+                        <span className="text-xs font-bold text-gray-500 tracking-wider">
+                          VEHICLE TYPE <span className="text-red-500">*</span>
+                        </span>
                         <div className="flex-1 h-px bg-gray-200" />
                       </div>
                       <div className="grid grid-cols-3 gap-2">
@@ -589,74 +641,94 @@ export function BookingModal({ isOpen, onClose, initialServiceId }: BookingModal
                     initial={{ opacity: 0, x: 20 }}
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: -20 }}
-                    className="space-y-4"
+                    className="space-y-5"
                   >
-                    <p className="text-gray-600 text-sm">Add upgrades, add-ons, or shop items for this vehicle.</p>
-
-                    {/* Top Star Favorites Header */}
-                    <div className="flex items-center gap-4">
-                      <div className="flex-1 h-px bg-[#D4A843]/30" />
-                      <div className="flex items-center gap-2 text-[#D4A843]">
-                        <Star className="w-4 h-4 fill-[#D4A843]" />
-                        <span className="text-xs font-bold tracking-wider">WAYNE&apos;S FAVORITES</span>
-                      </div>
-                      <div className="flex-1 h-px bg-[#D4A843]/30" />
+                    <div>
+                      <h3 className="text-lg font-bold text-gray-900 mb-1">Upgrades & Add-ons</h3>
+                      <p className="text-gray-500 text-sm">Select an upgrade if you want a higher package, then add optional services.</p>
                     </div>
 
-                    {/* Upgrades List */}
                     <div className="space-y-4">
-                      {upgrades.map((upgrade) => (
-                        <div
-                          key={upgrade.id}
-                          className={`rounded-xl border-2 overflow-hidden transition-all ${
-                            selectedUpgrades.includes(upgrade.id)
-                              ? "border-[#D4A843]"
-                              : "border-gray-200"
-                          }`}
-                        >
-                          {/* Badge */}
-                          <div className="flex justify-center -mb-3 relative">
-                            <span className={`${upgrade.badgeColor} text-white text-[10px] font-bold px-3 py-1 rounded-full`}>
-                              {upgrade.badge}
-                            </span>
-                          </div>
-
-                          <div className="p-4 pt-5">
+                      {availableUpgrades.length > 0 ? (
+                        availableUpgrades.map((upgrade) => (
+                          <button
+                            key={upgrade.id}
+                            onClick={() => setSelectedService(upgrade.id)}
+                            className={`w-full rounded-2xl border-2 p-4 text-left transition-all ${
+                              selectedService === upgrade.id
+                                ? "border-[#D4A843] bg-[#D4A843]/5"
+                                : "border-gray-200 hover:border-gray-300"
+                            }`}
+                          >
                             <div className="flex gap-4">
-                              <div className="w-20 h-16 rounded-lg overflow-hidden flex-shrink-0">
-                                <img 
-                                  src={upgrade.image} 
-                                  alt={upgrade.name}
+                              <div className="w-20 h-16 rounded-xl overflow-hidden bg-gray-100 flex-shrink-0">
+                                <img
+                                  src={upgrade.image}
+                                  alt={upgrade.title}
                                   className="w-full h-full object-cover"
                                 />
                               </div>
                               <div className="flex-1">
-                                <h4 className="font-bold text-gray-900">{upgrade.name}</h4>
-                                <p className="text-gray-500 text-sm">{upgrade.description}</p>
-                                {upgrade.duration && (
-                                  <p className="text-gray-400 text-xs mt-1">{upgrade.duration}</p>
-                                )}
-                              </div>
-                              <div className="text-right">
-                                <div className="text-[#D4A843] font-bold">+₱{upgrade.price.toLocaleString()}</div>
+                                <div className="flex items-center justify-between gap-3">
+                                  <h4 className="font-bold text-gray-900">{upgrade.title}</h4>
+                                  <span className="text-[#D4A843] font-bold">
+                                    ₱{(
+                                      vehicleType && upgrade.prices?.[vehicleType as keyof typeof upgrade.prices]
+                                        ? upgrade.prices[vehicleType as keyof typeof upgrade.prices]
+                                        : upgrade.priceValue
+                                    ).toLocaleString()}
+                                  </span>
+                                </div>
+                                <p className="text-gray-500 text-sm mt-1">{upgrade.description}</p>
+                                <p className="text-gray-400 text-xs mt-2">{upgrade.duration}</p>
                               </div>
                             </div>
-                            <button
-                              onClick={() => toggleUpgrade(upgrade.id)}
-                              className={`w-full mt-3 py-2.5 rounded-full font-bold text-sm transition-all ${
-                                selectedUpgrades.includes(upgrade.id)
-                                  ? "bg-[#D4A843] text-white"
-                                  : "bg-[#D4A843]/10 text-[#D4A843] hover:bg-[#D4A843]/20"
-                              }`}
-                            >
-                              {selectedUpgrades.includes(upgrade.id) ? "SELECTED ✓" : "TAP TO SELECT"}
-                            </button>
-                          </div>
+                          </button>
+                        ))
+                      ) : (
+                        <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4 text-gray-600">
+                          No upgrades are available for this service.
                         </div>
-                      ))}
+                      )}
                     </div>
 
-                    {/* Shop Items */}
+                    <div className="space-y-3 pt-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <div>
+                          <h4 className="text-base font-bold text-gray-900">Optional Add-ons</h4>
+                          <p className="text-gray-500 text-sm">Add one or more add-ons to increase protection and detailing value.</p>
+                        </div>
+                        <span className="text-xs text-gray-500 uppercase tracking-[0.2em]">Optional</span>
+                      </div>
+
+                      <div className="grid gap-3">
+                        {addOns.map((addon) => {
+                          const selected = selectedAddOns.includes(addon.id)
+                          return (
+                            <button
+                              key={addon.id}
+                              type="button"
+                              onClick={() => toggleAddOn(addon.id)}
+                              className={`w-full rounded-2xl border p-4 text-left transition-all ${
+                                selected ? "border-[#D4A843] bg-[#D4A843]/5" : "border-gray-200 hover:border-gray-300"
+                              }`}
+                            >
+                              <div className="flex items-center justify-between gap-4">
+                                <div>
+                                  <h5 className="font-semibold text-gray-900">{addon.name}</h5>
+                                  <p className="text-gray-500 text-sm mt-1">{addon.description}</p>
+                                </div>
+                                <div className="text-right">
+                                  <p className="text-[#D4A843] font-bold">+₱{addon.price.toLocaleString()}</p>
+                                  <p className="text-xs text-gray-400">{addon.durationMinutes} mins</p>
+                                </div>
+                              </div>
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
+
                     <div className="pt-6">
                       <div className="flex items-center justify-between mb-4">
                         <div>
@@ -827,14 +899,11 @@ export function BookingModal({ isOpen, onClose, initialServiceId }: BookingModal
                         <span className="text-gray-500">Vehicle</span>
                         <span className="font-semibold text-gray-900">{vehicleMake} {vehicleModel}</span>
                       </div>
-                      {selectedUpgrades.length > 0 && (
+                      {selectedAddOnsData.length > 0 && (
                         <div className="flex justify-between items-start gap-4">
-                          <span className="text-gray-500">Add-ons</span>
+                          <span className="text-gray-500">Selected Add-ons</span>
                           <span className="font-semibold text-gray-900 text-right">
-                            {selectedUpgrades
-                              .map((upgradeId) => upgrades.find((u) => u.id === upgradeId)?.name)
-                              .filter(Boolean)
-                              .join(", ")}
+                            {selectedAddOnsData.map((addon) => addon.name).join(", ")}
                           </span>
                         </div>
                       )}
