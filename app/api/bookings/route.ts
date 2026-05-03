@@ -41,18 +41,38 @@ function formatSlot(date: string, time: string) {
   return `${date} ${time} (Asia/Manila)`
 }
 
-// Service duration mapping (in hours)
 const SERVICE_DURATIONS: Record<string, number> = {
-  "Premium Carwash": 1,
-  "Engine Wash": 2,
-  "Full Detailing": 4,
-  "BAC-2-Zero": 2,
-  "Paint Protection": 3,
-  "Ceramic Coating": 8, // Blocks 8 hours (6am to 2pm)
+  "Express Wash": 35,
+  "Express Full Detail": 60,
+  "Premium Wash": 60,
+  "Premium Detail": 60,
+  "Executive Detail": 80,
+  "Elite Detail": 105,
+  "Paint Correction": 120,
+  "Ceramic Coating 3yr": 480,
+  "Ceramic Coating 5yr": 480,
+}
+
+const ADDON_DURATIONS: Record<string, number> = {
+  "Headlight Restoration": 120,
+  "Engine Bay Cleaning": 30,
+  "Back to Zero Sanitation": 5,
+  "Water Spot Removal": 10,
+  "Quick Beads": 10,
+  "Deluxe Interior Detail": 30,
+}
+
+function normalizeAddonName(addonName: string) {
+  return addonName.split("(")[0].trim()
 }
 
 function getServiceDuration(serviceTitle: string): number {
-  return SERVICE_DURATIONS[serviceTitle] || 1 // Default to 1 hour if not found
+  return SERVICE_DURATIONS[serviceTitle] || 60
+}
+
+function getAddonDuration(addonName: string): number {
+  const normalized = normalizeAddonName(addonName)
+  return ADDON_DURATIONS[normalized] || 0
 }
 
 function overlaps(startA: string, endA: string, startB: string, endB: string) {
@@ -119,24 +139,30 @@ export async function POST(request: Request) {
         const calendarId = getCalendarId()
         const calendar = getCalendarClient()
         const serviceDuration = getServiceDuration(payload.serviceTitle)
+        const addOnDuration = payload.addons
+          .map((addon) => getAddonDuration(addon.name))
+          .reduce((sum, minutes) => sum + minutes, 0)
+        const totalDurationMinutes = serviceDuration + addOnDuration
 
-        let startDateTime: string
-        let endDateTime: string
+        const [startHourStr, startMinuteStr] = payload.appointmentTime.split(":")
+        const startHour = Number(startHourStr)
+        const startMinute = Number(startMinuteStr)
 
-        if (payload.serviceTitle === "Ceramic Coating") {
-          // Block 8 hours: 6:00 AM to 2:00 PM
-          startDateTime = `${payload.appointmentDate}T06:00:00+08:00`
-          endDateTime = `${payload.appointmentDate}T14:00:00+08:00`
-        } else {
-          // Normal service: start at selected time, end after duration
-          startDateTime = `${payload.appointmentDate}T${payload.appointmentTime}:00+08:00`
-          const startHour = Number(payload.appointmentTime.split(":")[0])
-          const endHour = startHour + serviceDuration
-          const endTimeStr = `${String(endHour).padStart(2, "0")}:00`
-          endDateTime = `${payload.appointmentDate}T${endTimeStr}:00+08:00`
-        }
+        const startDateTime = `${payload.appointmentDate}T${String(startHour).padStart(2, "0")}:${String(startMinute).padStart(2, "0")}:00+08:00`
 
-        // Check availability for the full duration before booking
+        const [year, month, day] = payload.appointmentDate.split("-").map(Number)
+        const appointmentDateObj = new Date(year, month - 1, day)
+        const endTotalMinutes = startHour * 60 + startMinute + totalDurationMinutes
+        const endDayOffset = Math.floor(endTotalMinutes / 1440)
+        const endMinuteOfDay = endTotalMinutes % 1440
+        const endHour = Math.floor(endMinuteOfDay / 60)
+        const endMinute = endMinuteOfDay % 60
+
+        appointmentDateObj.setDate(appointmentDateObj.getDate() + endDayOffset)
+        const endDate = `${appointmentDateObj.getFullYear()}-${String(appointmentDateObj.getMonth() + 1).padStart(2, "0")}-${String(appointmentDateObj.getDate()).padStart(2, "0")}`
+        const endDateTime = `${endDate}T${String(endHour).padStart(2, "0")}:${String(endMinute).padStart(2, "0")}:00+08:00`
+
+        // Check availability for the full booked duration
         const dayStart = `${payload.appointmentDate}T00:00:00+08:00`
         const dayEnd = `${payload.appointmentDate}T23:59:59+08:00`
         const eventsResponse = await calendar.events.list({
@@ -148,10 +174,12 @@ export async function POST(request: Request) {
         })
         const events = eventsResponse.data.items || []
 
-        // Check each hour of the service duration
+        const requestedHours = Math.ceil(totalDurationMinutes / 60)
         let isAvailable = true
-        for (let hour = 0; hour < serviceDuration; hour++) {
-          const slotStartHour = payload.serviceTitle === "Ceramic Coating" ? 6 + hour : Number(payload.appointmentTime.split(":")[0]) + hour
+        const appointmentStartHour = Number(payload.appointmentTime.split(":")[0])
+
+        for (let hour = 0; hour < requestedHours; hour++) {
+          const slotStartHour = appointmentStartHour + hour
           const slotStart = `${payload.appointmentDate}T${String(slotStartHour).padStart(2, "0")}:00:00+08:00`
           const slotEnd = `${payload.appointmentDate}T${String(slotStartHour + 1).padStart(2, "0")}:00:00+08:00`
 

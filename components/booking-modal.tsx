@@ -18,7 +18,7 @@ const stepTitles: Record<Step, { title: string; subtitle: string }> = {
   1: { title: "YOUR PHONE", subtitle: "Your Phone" },
   2: { title: "SELECT SERVICE", subtitle: "Choose Service" },
   3: { title: "YOUR VEHICLE(S)", subtitle: "Vehicle Info" },
-  4: { title: "UPGRADES & ADD-ONS", subtitle: "Customize" },
+  4: { title: "UPGRADES", subtitle: "Customize" },
   5: { title: "PICK A DATE & TIME", subtitle: "Schedule" },
   6: { title: "CONFIRMATION", subtitle: "Complete" },
 }
@@ -644,53 +644,63 @@ export function BookingModal({ isOpen, onClose, initialServiceId }: BookingModal
                     className="space-y-5"
                   >
                     <div>
-                      <h3 className="text-lg font-bold text-gray-900 mb-1">Upgrades & Add-ons</h3>
-                      <p className="text-gray-500 text-sm">Select an upgrade if you want a higher package, then add optional services.</p>
+                      <h3 className="text-lg font-bold text-gray-900 mb-1">
+                        {selectedService === "ceramic-coating-5yr" ? "Add-ons" : "Upgrades & Add-ons"}
+                      </h3>
+                      <p className="text-gray-500 text-sm">
+                        {selectedService === "ceramic-coating-5yr"
+                          ? "Choose optional add-ons and shop items for your service."
+                          : "Select an upgrade if you want a higher package, then add optional services."}
+                      </p>
                     </div>
 
-                    <div className="space-y-4">
-                      {availableUpgrades.length > 0 ? (
-                        availableUpgrades.map((upgrade) => (
-                          <button
-                            key={upgrade.id}
-                            onClick={() => setSelectedService(upgrade.id)}
-                            className={`w-full rounded-2xl border-2 p-4 text-left transition-all ${
-                              selectedService === upgrade.id
-                                ? "border-[#D4A843] bg-[#D4A843]/5"
-                                : "border-gray-200 hover:border-gray-300"
-                            }`}
-                          >
-                            <div className="flex gap-4">
-                              <div className="w-20 h-16 rounded-xl overflow-hidden bg-gray-100 flex-shrink-0">
-                                <img
-                                  src={upgrade.image}
-                                  alt={upgrade.title}
-                                  className="w-full h-full object-cover"
-                                />
-                              </div>
-                              <div className="flex-1">
-                                <div className="flex items-center justify-between gap-3">
-                                  <h4 className="font-bold text-gray-900">{upgrade.title}</h4>
-                                  <span className="text-[#D4A843] font-bold">
-                                    ₱{(
-                                      vehicleType && upgrade.prices?.[vehicleType as keyof typeof upgrade.prices]
-                                        ? upgrade.prices[vehicleType as keyof typeof upgrade.prices]
-                                        : upgrade.priceValue
-                                    ).toLocaleString()}
-                                  </span>
+                    {selectedService !== "ceramic-coating-5yr" && (
+                      <div className="space-y-4">
+                        {availableUpgrades.length > 0 ? (
+                          availableUpgrades.map((upgrade) => {
+                            const upgradePrice = vehicleType && upgrade.prices?.[vehicleType as keyof typeof upgrade.prices]
+                              ? upgrade.prices[vehicleType as keyof typeof upgrade.prices]
+                              : upgrade.priceValue
+
+                            return (
+                              <button
+                                key={upgrade.id}
+                                onClick={() => setSelectedService(upgrade.id)}
+                                className={`w-full rounded-2xl border-2 p-4 text-left transition-all ${
+                                  selectedService === upgrade.id
+                                    ? "border-[#D4A843] bg-[#D4A843]/5"
+                                    : "border-gray-200 hover:border-gray-300"
+                                }`}
+                              >
+                                <div className="flex gap-4">
+                                  <div className="w-20 h-16 rounded-xl overflow-hidden bg-gray-100 flex-shrink-0">
+                                    <img
+                                      src={upgrade.image}
+                                      alt={upgrade.title}
+                                      className="w-full h-full object-cover"
+                                    />
+                                  </div>
+                                  <div className="flex-1">
+                                    <div className="flex items-center justify-between gap-3">
+                                      <h4 className="font-bold text-gray-900">{upgrade.title}</h4>
+                                      <span className="text-[#D4A843] font-bold">
+                                        ₱{upgradePrice.toLocaleString()}
+                                      </span>
+                                    </div>
+                                    <p className="text-gray-500 text-sm mt-1">{upgrade.description}</p>
+                                    <p className="text-gray-400 text-xs mt-2">{upgrade.duration}</p>
+                                  </div>
                                 </div>
-                                <p className="text-gray-500 text-sm mt-1">{upgrade.description}</p>
-                                <p className="text-gray-400 text-xs mt-2">{upgrade.duration}</p>
-                              </div>
-                            </div>
-                          </button>
-                        ))
-                      ) : (
-                        <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4 text-gray-600">
-                          No upgrades are available for this service.
-                        </div>
-                      )}
-                    </div>
+                              </button>
+                            )
+                          })
+                        ) : (
+                          <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4 text-gray-600">
+                            No upgrades are available for this service.
+                          </div>
+                        )}
+                      </div>
+                    )}
 
                     <div className="space-y-3 pt-4">
                       <div className="flex items-center justify-between mb-3">
