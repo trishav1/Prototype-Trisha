@@ -3,6 +3,7 @@
 import { motion } from "framer-motion"
 import { ChevronUp } from "lucide-react"
 import Image from "next/image"
+import { useContactModal } from "@/hooks/use-contact-modal"
 
 const quickLinks = [
   { name: "Home", href: "#home" },
@@ -22,6 +23,8 @@ const services = [
 ]
 
 export function Footer() {
+  const { openModal } = useContactModal()
+
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: "smooth" })
   }
@@ -101,9 +104,9 @@ export function Footer() {
               <p>No.9 Mount Vernon St,</p>
               <p>Brgy Sta. Elena, Marikina City</p>
               <p className="pt-2">
-                <a href="tel:09173763348" className="hover:text-[#D4A843] transition-colors">
+                <button onClick={openModal} className="hover:text-[#D4A843] transition-colors">
                   0917-376-3348
-                </a>
+                </button>
               </p>
               <p>
                 <a href="mailto:waynesdetailing2026@gmail.com" className="hover:text-[#D4A843] transition-colors">

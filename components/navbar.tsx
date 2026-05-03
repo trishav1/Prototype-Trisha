@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Menu, X, Phone } from "lucide-react"
+import { useContactModal } from "@/hooks/use-contact-modal"
 
 const navLinks = [
   { name: "SERVICES", href: "#services" },
@@ -42,6 +43,7 @@ interface NavbarProps {
 export function Navbar({ onBookNow }: NavbarProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
+  const { openModal } = useContactModal()
 
   useEffect(() => {
     const handleScroll = () => {
@@ -109,13 +111,13 @@ export function Navbar({ onBookNow }: NavbarProps) {
 
             {/* CTA Buttons */}
             <div className="hidden md:flex items-center gap-6 flex-shrink-0">
-              <a
-                href="tel:09173763348"
+              <button
+                onClick={openModal}
                 className="flex items-center gap-2 text-white/80 hover:text-white transition-colors"
               >
                 <Phone className="w-4 h-4" />
                 <span className="text-sm">0917-376-3348</span>
-              </a>
+              </button>
               <motion.button
                 onClick={onBookNow}
                 className="bg-[#ED0407] hover:bg-[#ED0407]/90 text-white px-6 py-2.5 rounded-md font-bold text-sm transition-all"
@@ -157,13 +159,13 @@ export function Navbar({ onBookNow }: NavbarProps) {
                   </a>
                 ))}
                 <div className="pt-4 border-t border-white/10">
-                  <a
-                    href="tel:09173763348"
+                  <button
+                    onClick={openModal}
                     className="flex items-center gap-2 text-white/80 hover:text-white transition-colors mb-4"
                   >
                     <Phone className="w-4 h-4" />
                     <span>0917-376-3348</span>
-                  </a>
+                  </button>
                   <button
                     onClick={() => {
                       setIsOpen(false)

@@ -2,12 +2,15 @@
 
 import { motion } from "framer-motion"
 import { MapPin, Phone, Mail, Clock, Facebook, Instagram, MessageCircle } from "lucide-react"
+import { useContactModal } from "@/hooks/use-contact-modal"
 
 interface ContactSectionProps {
   onBookNow: () => void
 }
 
 export function ContactSection({ onBookNow }: ContactSectionProps) {
+  const { openModal } = useContactModal()
+
   return (
     <section id="contact" className="py-24 bg-gradient-to-b from-[#111111] to-[#0A0A0A]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -60,9 +63,9 @@ export function ContactSection({ onBookNow }: ContactSectionProps) {
               </div>
               <div>
                 <h3 className="text-white font-bold text-lg mb-1">Phone</h3>
-                <a href="tel:09173763348" className="text-white/60 hover:text-[#D4A843] transition-colors">
+                <button onClick={openModal} className="text-white/60 hover:text-[#D4A843] transition-colors">
                   0917-376-3348
-                </a>
+                </button>
               </div>
             </div>
 

@@ -2,12 +2,15 @@
 
 import { motion } from "framer-motion"
 import { Calendar, Phone } from "lucide-react"
+import { useContactModal } from "@/hooks/use-contact-modal"
 
 interface HeroProps {
   onBookNow: () => void
 }
 
 export function Hero({ onBookNow }: HeroProps) {
+  const { openModal } = useContactModal()
+
   return (
     <section
       id="home"
@@ -87,15 +90,15 @@ export function Hero({ onBookNow }: HeroProps) {
             <Calendar className="w-5 h-5" />
             BOOK NOW
           </motion.button>
-          <motion.a
-            href="tel:09173763348"
+          <motion.button
+            onClick={openModal}
             className="inline-flex items-center justify-center gap-3 border-2 border-[#D4A843] text-[#D4A843] hover:bg-[#D4A843]/10 px-8 py-4 rounded-md font-bold text-sm tracking-wide transition-all"
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >
             <Phone className="w-5 h-5" />
             0917-376-3348
-          </motion.a>
+          </motion.button>
         </motion.div>
 
         {/* Operating Hours */}

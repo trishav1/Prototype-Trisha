@@ -11,6 +11,8 @@ import { ReviewsSection } from "@/components/reviews-section"
 import { ContactSection } from "@/components/contact-section"
 import { Footer } from "@/components/footer"
 import { BookingModal } from "@/components/booking-modal"
+import { ContactModal } from "@/components/contact-modal"
+import { ContactModalProvider } from "@/hooks/use-contact-modal"
 
 export default function Home() {
   const [isBookingOpen, setIsBookingOpen] = useState(false)
@@ -27,22 +29,25 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-screen bg-[#0A0A0A]">
-      <Navbar onBookNow={() => openBooking()} />
-      <Hero onBookNow={() => openBooking()} />
-      <StatsBar />
-      <ServicesSection onBookService={(id) => openBooking(id)} />
-      <WhyChooseUs />
-      <ShopSection />
-      <ReviewsSection />
-      <ContactSection onBookNow={() => openBooking()} />
-      <Footer />
-      
-      <BookingModal
-        isOpen={isBookingOpen}
-        onClose={closeBooking}
-        initialServiceId={selectedServiceId}
-      />
-    </main>
+    <ContactModalProvider>
+      <main className="min-h-screen bg-[#0A0A0A]">
+        <Navbar onBookNow={() => openBooking()} />
+        <Hero onBookNow={() => openBooking()} />
+        <StatsBar />
+        <ServicesSection onBookService={(id) => openBooking(id)} />
+        <WhyChooseUs />
+        <ShopSection />
+        <ReviewsSection />
+        <ContactSection onBookNow={() => openBooking()} />
+        <Footer />
+        
+        <BookingModal
+          isOpen={isBookingOpen}
+          onClose={closeBooking}
+          initialServiceId={selectedServiceId}
+        />
+        <ContactModal />
+      </main>
+    </ContactModalProvider>
   )
 }
